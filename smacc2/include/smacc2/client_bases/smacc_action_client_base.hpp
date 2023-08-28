@@ -335,11 +335,13 @@ public:
     this->lastRequest_ = lastRequest;
 
     RCLCPP_INFO_STREAM(
-      getLogger(), "[" << getName() << "] Action request "
-      // << rclcpp_action::to_string(this->goalHandle_->get_goal_id()) <<". Goal sent to " << this->action_endpoint_
-      // << "\": " << std::endl
-      // << goal
-    );
+      getLogger(),
+      "["
+        << getName()
+        << "] Action request "
+        // << rclcpp_action::to_string(this->goalHandle_->get_goal_id()) <<". Goal sent to " << this->action_endpoint_
+        << "\": " << std::endl);
+        // << goal);
 
     // if (client_->isServerConnected())
     // {
