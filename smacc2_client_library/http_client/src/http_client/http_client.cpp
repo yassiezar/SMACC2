@@ -30,7 +30,11 @@ ClHttp::ClHttp(const std::string &server_name, const int &timeout)
     : initialized_{false},
       timeout_{timeout},
       server_{server_name},
-      worker_guard_{boost::asio::make_work_guard(io_context_.get_executor())} {}
+      worker_guard_{boost::asio::make_work_guard(io_context_.get_executor())},
+      ssl_context_{boost::asio::ssl::context::tlsv12_client} {
+  load_root_certificates(ssl_context_);
+  ssl_context_.set_verify_mode(boost::asio::ssl::verify_peer);
+}
 
 ClHttp::~ClHttp() {
   worker_guard_.reset();
@@ -58,7 +62,8 @@ void ClHttp::makeRequest(const kHttpRequestMethod http_method,
   RCLCPP_INFO(this->getLogger(), "Path %s", path_used.c_str());
   RCLCPP_INFO(this->getLogger(), "Port %s", server_.getPort().c_str());
 
-  std::make_shared<http_session>(io_context_, callbackHandler)
+  std::make_shared<http_session>(boost::asio::make_strand(io_context_),
+                                 ssl_context_, callbackHandler)
       ->run(server_.getServerName(), path_used, server_.getPort(),
             static_cast<boost::beast::http::verb>(http_method), HTTP_VERSION);
 }
@@ -68,11 +73,10 @@ void ClHttp::makeRequest(const kHttpRequestMethod http_method,
 /////////////////////////////////
 
 ClHttp::http_session::http_session(
-    boost::asio::io_context &ioc,
+    boost::asio::any_io_executor ioc, boost::asio::ssl::context &ssl_context,
     const std::function<void(const TResponse &)> response)
-    : onResponse{response},
-      resolver_{boost::asio::make_strand(ioc)},
-      stream_{boost::asio::make_strand(ioc)} {}
+    : onResponse{response}, resolver_{ioc}, stream_{ioc, ssl_context} {}
+// stream_{boost::asio::make_strand(ioc)} {}
 
 void ClHttp::http_session::run(const std::string &host,
                                const std::string &target,
@@ -98,13 +102,15 @@ void ClHttp::http_session::on_resolve(
   if (ec) return fail(ec, "resolve");
 
   // Set a timeout on the operation
-  stream_.expires_after(std::chrono::seconds(1));
+  boost::beast::get_lowest_layer(stream_).expires_after(
+      std::chrono::seconds(1));
 
   // Make the connection on the IP address we get from a lookup
-  stream_.async_connect(
+  boost::beast::get_lowest_layer(stream_).async_connect(
       results, boost::beast::bind_front_handler(&http_session::on_connect,
                                                 shared_from_this()));
 }
+
 void ClHttp::http_session::fail(boost::beast::error_code ec, char const *what) {
   std::cout << "Failure!..." << std::endl;
   std::cerr << what << ": " << ec.message() << "\n";
@@ -119,7 +125,21 @@ void ClHttp::http_session::on_connect(
   if (ec) return fail(ec, "connect");
 
   // Set a timeout on the operation
-  stream_.expires_after(std::chrono::seconds(1));
+  boost::beast::get_lowest_layer(stream_).expires_after(
+      std::chrono::seconds(1));
+
+  // Send the HTTP request to the remote host
+  stream_.async_handshake(boost::asio::ssl::stream_base::client,
+                          boost::beast::bind_front_handler(
+                              &http_session::on_handshake, shared_from_this()));
+}
+
+void ClHttp::http_session::on_handshake(boost::beast::error_code ec) {
+  if (ec) return fail(ec, "handshake");
+
+  // Set a timeout on the operation
+  boost::beast::get_lowest_layer(stream_).expires_after(
+      std::chrono::seconds(1));
 
   // Send the HTTP request to the remote host
   boost::beast::http::async_write(
@@ -147,12 +167,23 @@ void ClHttp::http_session::on_read(boost::beast::error_code ec,
 
   if (ec) return fail(ec, "read");
 
-  // Gracefully close the socket
-  stream_.socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+  boost::beast::get_lowest_layer(stream_).expires_after(
+      std::chrono::seconds(1));
 
+  // Gracefully close the socket
+  // stream_.socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+  stream_.async_shutdown(boost::beast::bind_front_handler(
+      &http_session::on_shutdown, shared_from_this()));
+}
+
+void ClHttp::http_session::on_shutdown(boost::beast::error_code ec) {
   // not_connected happens sometimes so don't bother reporting it.
-  if (ec && ec != boost::beast::errc::not_connected)
-    return fail(ec, "shutdown");
+  if (ec == boost::asio::error::eof) {
+    // Rationale:
+    // http://stackoverflow.com/questions/25587403/boost-asio-ssl-async-shutdown-always-finishes-with-an-error
+    ec = {};
+  }
+  // if (ec) return fail(ec, "shutdown");
 
   // If we get here then the connection is closed gracefully
   onResponse(res_);
