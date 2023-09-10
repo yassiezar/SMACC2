@@ -71,6 +71,30 @@ class ClHttp : public smacc2::ISmaccClient {
     boost::beast::http::response<boost::beast::http::string_body> res_;
   };
 
+  class Server {
+   public:
+    explicit Server(const std::string &server_name)
+        : server_name_{server_name}, ssl_{true} {
+      if (!server_name_.substr(0, 7).compare("http://")) {
+        ssl_ = false;
+        server_name_.erase(0, 7);
+      } else if (!server_name_.substr(0, 8).compare("https://")) {
+        server_name_.erase(0, 8);
+        ssl_ = true;
+      }
+    }
+
+    bool isSSL() const { return ssl_; }
+
+    std::string getPort() const { return ssl_ ? "443" : "80"; }
+
+    std::string getServerName() const { return server_name_; }
+
+   private:
+    std::string server_name_;
+    bool ssl_;
+  };
+
  public:
   enum class kHttpRequestMethod {
     GET = static_cast<int>(boost::beast::http::verb::get),
@@ -82,7 +106,7 @@ class ClHttp : public smacc2::ISmaccClient {
 
   template <typename T>
   boost::signals2::connection onResponseReceived(
-      void (T::*callback)(const TResponse&), T *object) {
+      void (T::*callback)(const TResponse &), T *object) {
     return this->getStateMachine()->createSignalConnection(onResponseReceived_,
                                                            callback, object);
   }
@@ -102,7 +126,8 @@ class ClHttp : public smacc2::ISmaccClient {
   bool initialized_;
   bool is_ssl_;
   int timeout_;
-  std::string server_name_;
+
+  Server server_;
 
   boost::asio::io_context io_context_;
   boost::asio::executor_work_guard<decltype(io_context_)::executor_type>
@@ -111,7 +136,7 @@ class ClHttp : public smacc2::ISmaccClient {
 
   smacc2::SmaccSignal<void(const TResponse &)> onResponseReceived_;
 
-  std::function<void(TResponse)> callbackHandler = [&](const TResponse& res) {
+  std::function<void(TResponse)> callbackHandler = [&](const TResponse &res) {
     onResponseReceived_(res);
   };
 };

@@ -26,14 +26,11 @@ namespace cl_http {
 // ClHttp implementation //
 ///////////////////////////
 
-ClHttp::ClHttp(const std::string &server, const int &timeout)
+ClHttp::ClHttp(const std::string &server_name, const int &timeout)
     : initialized_{false},
       timeout_{timeout},
-      server_name_{server},
-      worker_guard_{boost::asio::make_work_guard(io_context_.get_executor())} {
-  // User explicitly using http
-  is_ssl_ = server.substr(0, 8).compare("https://") ? false : true;
-}
+      server_{server_name},
+      worker_guard_{boost::asio::make_work_guard(io_context_.get_executor())} {}
 
 ClHttp::~ClHttp() {
   worker_guard_.reset();
@@ -49,9 +46,20 @@ void ClHttp::onInitialize() {
 
 void ClHttp::makeRequest(const kHttpRequestMethod http_method,
                          const std::string &path) {
-  RCLCPP_INFO(this->getLogger(), "SSL? %d", is_ssl_);
+  auto path_used = path;
+  if (path[0] != '/') {
+    std::reverse(path_used.begin(), path_used.end());
+    path_used += '/';
+    std::reverse(path_used.begin(), path_used.end());
+  }
+
+  RCLCPP_INFO(this->getLogger(), "SSL? %d", server_.isSSL());
+  RCLCPP_INFO(this->getLogger(), "Server %s", server_.getServerName().c_str());
+  RCLCPP_INFO(this->getLogger(), "Path %s", path_used.c_str());
+  RCLCPP_INFO(this->getLogger(), "Port %s", server_.getPort().c_str());
+
   std::make_shared<http_session>(io_context_, callbackHandler)
-      ->run(server_name_, path, is_ssl_ ? "443" : "80",
+      ->run(server_.getServerName(), path_used, server_.getPort(),
             static_cast<boost::beast::http::verb>(http_method), HTTP_VERSION);
 }
 

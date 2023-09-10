@@ -23,7 +23,9 @@ class OrHttp : public smacc2::Orthogonal<OrHttp> {
   void onInitialize() override {
     auto http_client =
         this->createClient<cl_http::ClHttp>(
-            "https://www.google.com");
+            "http://webhook.site");
+            // "https://webhook.site");
+            // "https://www.google.com");
   }
 };
 }  // namespace sm_atomic_http
