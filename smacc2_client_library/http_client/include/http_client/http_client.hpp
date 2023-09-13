@@ -20,7 +20,13 @@
 
 #pragma once
 
-#include <http_client/http_session.hpp>
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/strand.hpp>
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/ssl.hpp>
+#include <boost/beast/version.hpp>
+#include <http_client/ssl_http_session.hpp>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -65,7 +71,7 @@ class ClHttp : public smacc2::ISmaccClient {
     PUT = static_cast<int>(boost::beast::http::verb::put),
   };
 
-  using TResponse = http_session::TResponse;
+  using TResponse = http_session_base::TResponse;
 
   template <typename T>
   boost::signals2::connection onResponseReceived(

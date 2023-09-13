@@ -21,11 +21,6 @@
 #include <http_client/http_client.hpp>
 
 namespace cl_http {
-
-///////////////////////////
-// ClHttp implementation //
-///////////////////////////
-
 ClHttp::ClHttp(const std::string &server_name, const int &timeout)
     : initialized_{false},
       timeout_{timeout},
@@ -62,9 +57,13 @@ void ClHttp::makeRequest(const kHttpRequestMethod http_method,
   RCLCPP_INFO(this->getLogger(), "Path %s", path_used.c_str());
   RCLCPP_INFO(this->getLogger(), "Port %s", server_.getPort().c_str());
 
-  std::make_shared<http_session>(boost::asio::make_strand(io_context_),
-                                 ssl_context_, callbackHandler)
-      ->run(server_.getServerName(), path_used, server_.getPort(),
-            static_cast<boost::beast::http::verb>(http_method), HTTP_VERSION);
+  if (server_.isSSL()) {
+    std::make_shared<ssl_http_session>(boost::asio::make_strand(io_context_),
+                                       ssl_context_, callbackHandler)
+        ->run(server_.getServerName(), path_used,
+              static_cast<boost::beast::http::verb>(http_method), HTTP_VERSION);
+  } else {
+    // TODO: Use non-ssl request
+  }
 }
 }  // namespace cl_http

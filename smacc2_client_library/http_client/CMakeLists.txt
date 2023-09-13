@@ -21,14 +21,21 @@ include_directories(
 
 file(GLOB_RECURSE SRC_FILES src *.cpp)
 
-add_library(${PROJECT_NAME}
-  ${SRC_FILES}
+add_library(http_session
+  src/http_client/ssl_http_session.cpp
 )
 
-target_link_libraries(${PROJECT_NAME} ${smacc2_LIBRARIES})
-ament_target_dependencies(${PROJECT_NAME} smacc2)
+add_library(${PROJECT_NAME}
+  src/http_client/http_client.cpp
+)
+
+target_link_libraries(${PROJECT_NAME}
+  http_session
+  ${smacc2_LIBRARIES}
+)
+ament_target_dependencies(${PROJECT_NAME} smacc2) 
 ament_export_include_directories(include)
-ament_export_libraries(${PROJECT_NAME})
+ament_export_libraries(${PROJECT_NAME} http_session)
 
 install(
   DIRECTORY include/
@@ -36,6 +43,7 @@ install(
 
 install(TARGETS
   ${PROJECT_NAME}
+  http_session
   DESTINATION lib/)
 
 ament_package()
