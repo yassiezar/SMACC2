@@ -23,6 +23,7 @@ file(GLOB_RECURSE SRC_FILES src *.cpp)
 
 add_library(http_session
   src/http_client/ssl_http_session.cpp
+  src/http_client/http_session.cpp
 )
 
 add_library(${PROJECT_NAME}

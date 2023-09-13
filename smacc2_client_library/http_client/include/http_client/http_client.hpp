@@ -27,6 +27,7 @@
 #include <boost/beast/ssl.hpp>
 #include <boost/beast/version.hpp>
 #include <http_client/ssl_http_session.hpp>
+#include <http_client/http_session.hpp>
 #include <iostream>
 #include <memory>
 #include <optional>

@@ -63,7 +63,10 @@ void ClHttp::makeRequest(const kHttpRequestMethod http_method,
         ->run(server_.getServerName(), path_used,
               static_cast<boost::beast::http::verb>(http_method), HTTP_VERSION);
   } else {
-    // TODO: Use non-ssl request
+    std::make_shared<http_session>(boost::asio::make_strand(io_context_),
+                                   callbackHandler)
+        ->run(server_.getServerName(), path_used,
+              static_cast<boost::beast::http::verb>(http_method), HTTP_VERSION);
   }
 }
 }  // namespace cl_http
