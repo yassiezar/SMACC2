@@ -20,12 +20,7 @@
 
 #pragma once
 
-#include <boost/asio/executor_work_guard.hpp>
-#include <boost/asio/strand.hpp>
-#include <boost/beast/core.hpp>
-#include <boost/beast/http.hpp>
-#include <boost/beast/ssl.hpp>
-#include <boost/beast/version.hpp>
+#include <http_client/http_session.hpp>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -39,44 +34,6 @@
 
 namespace cl_http {
 class ClHttp : public smacc2::ISmaccClient {
-  class http_session : public std::enable_shared_from_this<http_session> {
-   public:
-    using TResponse =
-        boost::beast::http::response<boost::beast::http::string_body>;
-
-    // Objects are constructed with a strand to
-    // ensure that handlers do not execute concurrently.
-    http_session(boost::asio::any_io_executor ioc,
-                 boost::asio::ssl::context &ssl_context,
-                 const std::function<void(const TResponse &)> response);
-
-    // Start the asynchronous operation
-    void run(const std::string &host, const std::string &target,
-             const std::string &port,
-             const boost::beast::http::verb http_method, const int &version);
-
-   private:
-    void on_resolve(boost::beast::error_code ec,
-                    boost::asio::ip::tcp::resolver::results_type results);
-    void fail(boost::beast::error_code ec, char const *what);
-    void on_connect(
-        boost::beast::error_code ec,
-        boost::asio::ip::tcp::resolver::results_type::endpoint_type);
-    void on_handshake(boost::beast::error_code ec);
-    void on_write(boost::beast::error_code ec, std::size_t bytes_transferred);
-    void on_read(boost::beast::error_code ec, std::size_t bytes_transferred);
-    void on_shutdown(boost::beast::error_code ec);
-
-    std::function<void(const TResponse &)> onResponse;
-
-    boost::asio::ip::tcp::resolver resolver_;
-    // boost::beast::tcp_stream stream_;
-    boost::beast::ssl_stream<boost::beast::tcp_stream> stream_;
-    boost::beast::flat_buffer buffer_;  // (Must persist between reads)
-    boost::beast::http::request<boost::beast::http::empty_body> req_;
-    boost::beast::http::response<boost::beast::http::string_body> res_;
-  };
-
   class Server {
    public:
     explicit Server(const std::string &server_name)
