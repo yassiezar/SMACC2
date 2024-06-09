@@ -53,7 +53,7 @@ class CbHttpRequest : public smacc2::SmaccClientBehavior {
   void onEntry() override {
     RCLCPP_INFO(this->getLogger(), "On Entry!");
 
-    cl_http::ClHttp::kHttpRequestMethod::GET);
+    cl_http_->makeRequest(cl_http::ClHttp::kHttpRequestMethod::GET);
   }
 
   void onExit() override { RCLCPP_INFO(this->getLogger(), "Cb on exit!"); }

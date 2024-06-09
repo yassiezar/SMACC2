@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 project(sm_atomic_http)
 
+set(CMAKE_BUILD_TYPE "Debug")
+
 # Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
