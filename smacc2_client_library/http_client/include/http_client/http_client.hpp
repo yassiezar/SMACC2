@@ -37,8 +37,6 @@
 #include <thread>
 #include <unordered_map>
 
-#include "root_certificates.h"
-
 namespace cl_http {
 class ClHttp : public smacc2::ISmaccClient {
   class Server {

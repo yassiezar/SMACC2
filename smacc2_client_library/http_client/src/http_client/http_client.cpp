@@ -27,7 +27,7 @@ ClHttp::ClHttp(const std::string &server_name, const int &timeout)
       server_{server_name},
       worker_guard_{boost::asio::make_work_guard(io_context_.get_executor())},
       ssl_context_{boost::asio::ssl::context::tlsv12_client} {
-  load_root_certificates(ssl_context_);
+  ssl_context_.set_default_verify_paths();
   ssl_context_.set_verify_mode(boost::asio::ssl::verify_peer);
 }
 
