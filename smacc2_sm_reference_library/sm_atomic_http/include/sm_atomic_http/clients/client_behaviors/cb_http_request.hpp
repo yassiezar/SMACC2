@@ -20,10 +20,9 @@
 
 #pragma once
 
+#include <cstring>
 #include <http_client/http_client.hpp>
 #include <smacc2/smacc.hpp>
-
-#include <cstring>
 
 namespace sm_atomic_http {
 
@@ -47,15 +46,14 @@ class CbHttpRequest : public smacc2::SmaccClientBehavior {
 
   void onResponseReceived(const cl_http::ClHttp::TResponse& response) {
     RCLCPP_INFO_STREAM(this->getLogger(), "ON RESPONSE");
-    // RCLCPP_INFO_STREAM(this->getLogger(), response);
+    RCLCPP_INFO_STREAM(this->getLogger(), response.body());
     triggerTranstition();
   }
 
   void onEntry() override {
     RCLCPP_INFO(this->getLogger(), "On Entry!");
 
-    cl_http_->makeRequest(
-        cl_http::ClHttp::kHttpRequestMethod::GET);
+    cl_http::ClHttp::kHttpRequestMethod::GET);
   }
 
   void onExit() override { RCLCPP_INFO(this->getLogger(), "Cb on exit!"); }

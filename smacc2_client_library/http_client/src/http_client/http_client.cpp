@@ -21,18 +21,14 @@
 #include <http_client/http_client.hpp>
 
 namespace cl_http {
-
-///////////////////////////
-// ClHttp implementation //
-///////////////////////////
-
-ClHttp::ClHttp(const std::string &server, const int &timeout)
+ClHttp::ClHttp(const std::string& server_name, const int& timeout)
     : initialized_{false},
       timeout_{timeout},
-      server_name_{server},
-      worker_guard_{boost::asio::make_work_guard(io_context_.get_executor())} {
-  // User explicitly using http
-  is_ssl_ = server.substr(0, 8).compare("https://") ? false : true;
+      server_{server_name},
+      worker_guard_{boost::asio::make_work_guard(io_context_.get_executor())},
+      ssl_context_{boost::asio::ssl::context::tlsv12_client} {
+  ssl_context_.set_default_verify_paths();
+  ssl_context_.set_verify_mode(boost::asio::ssl::verify_peer);
 }
 
 ClHttp::~ClHttp() {
@@ -48,105 +44,29 @@ void ClHttp::onInitialize() {
 }
 
 void ClHttp::makeRequest(const kHttpRequestMethod http_method,
-                         const std::string &path) {
-  RCLCPP_INFO(this->getLogger(), "SSL? %d", is_ssl_);
-  std::make_shared<http_session>(io_context_, callbackHandler)
-      ->run(server_name_, path, is_ssl_ ? "443" : "80",
-            static_cast<boost::beast::http::verb>(http_method), HTTP_VERSION);
-}
+                         const std::string& path) {
+  auto path_used = path;
+  if (path[0] != '/') {
+    std::reverse(path_used.begin(), path_used.end());
+    path_used += '/';
+    std::reverse(path_used.begin(), path_used.end());
+  }
 
-/////////////////////////////////
-// http_session implementation //
-/////////////////////////////////
+  RCLCPP_INFO(this->getLogger(), "SSL? %d", server_.isSSL());
+  RCLCPP_INFO(this->getLogger(), "Server %s", server_.getServerName().c_str());
+  RCLCPP_INFO(this->getLogger(), "Path %s", path_used.c_str());
+  RCLCPP_INFO(this->getLogger(), "Port %s", server_.getPort().c_str());
 
-ClHttp::http_session::http_session(
-    boost::asio::io_context &ioc,
-    const std::function<void(const TResponse &)> response)
-    : onResponse{response},
-      resolver_{boost::asio::make_strand(ioc)},
-      stream_{boost::asio::make_strand(ioc)} {}
-
-void ClHttp::http_session::run(const std::string &host,
-                               const std::string &target,
-                               const std::string &port,
-                               const boost::beast::http::verb http_method,
-                               const int &version) {
-  // Set up an HTTP request
-  req_.version(version);
-  req_.method(http_method);
-  req_.target(target);
-  req_.set(boost::beast::http::field::host, host);
-  req_.set(boost::beast::http::field::user_agent, BOOST_BEAST_VERSION_STRING);
-
-  // Look up the domain name
-  resolver_.async_resolve(host.c_str(), port.c_str(),
-                          boost::beast::bind_front_handler(
-                              &http_session::on_resolve, shared_from_this()));
-}
-
-void ClHttp::http_session::on_resolve(
-    boost::beast::error_code ec,
-    boost::asio::ip::tcp::resolver::results_type results) {
-  if (ec) return fail(ec, "resolve");
-
-  // Set a timeout on the operation
-  stream_.expires_after(std::chrono::seconds(1));
-
-  // Make the connection on the IP address we get from a lookup
-  stream_.async_connect(
-      results, boost::beast::bind_front_handler(&http_session::on_connect,
-                                                shared_from_this()));
-}
-void ClHttp::http_session::fail(boost::beast::error_code ec, char const *what) {
-  std::cout << "Failure!..." << std::endl;
-  std::cerr << what << ": " << ec.message() << "\n";
-  res_.result(boost::beast::http::status::bad_request);
-  res_.reason() = ec.message();
-  onResponse(res_);
-}
-
-void ClHttp::http_session::on_connect(
-    boost::beast::error_code ec,
-    boost::asio::ip::tcp::resolver::results_type::endpoint_type) {
-  if (ec) return fail(ec, "connect");
-
-  // Set a timeout on the operation
-  stream_.expires_after(std::chrono::seconds(1));
-
-  // Send the HTTP request to the remote host
-  boost::beast::http::async_write(
-      stream_, req_,
-      boost::beast::bind_front_handler(&http_session::on_write,
-                                       shared_from_this()));
-}
-
-void ClHttp::http_session::on_write(boost::beast::error_code ec,
-                                    std::size_t bytes_transferred) {
-  boost::ignore_unused(bytes_transferred);
-
-  if (ec) return fail(ec, "write");
-
-  // Receive the HTTP response
-  boost::beast::http::async_read(
-      stream_, buffer_, res_,
-      boost::beast::bind_front_handler(&http_session::on_read,
-                                       shared_from_this()));
-}
-
-void ClHttp::http_session::on_read(boost::beast::error_code ec,
-                                   std::size_t bytes_transferred) {
-  boost::ignore_unused(bytes_transferred);
-
-  if (ec) return fail(ec, "read");
-
-  // Gracefully close the socket
-  stream_.socket().shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
-
-  // not_connected happens sometimes so don't bother reporting it.
-  if (ec && ec != boost::beast::errc::not_connected)
-    return fail(ec, "shutdown");
-
-  // If we get here then the connection is closed gracefully
-  onResponse(res_);
+  if (server_.isSSL()) {
+    std::make_shared<ssl_http_session>(boost::asio::make_strand(io_context_),
+                                       ssl_context_, callbackHandler)
+        ->run(server_.getServerName(), path_used,
+              static_cast<boost::beast::http::verb>(http_method), HTTP_VERSION);
+  } else {
+    std::make_shared<http_session>(boost::asio::make_strand(io_context_),
+                                   callbackHandler)
+        ->run(server_.getServerName(), path_used,
+              static_cast<boost::beast::http::verb>(http_method), HTTP_VERSION);
+  }
 }
 }  // namespace cl_http
