@@ -34,7 +34,7 @@ target_link_libraries(${PROJECT_NAME}
   http_session
   ${smacc2_LIBRARIES}
 )
-ament_target_dependencies(${PROJECT_NAME} smacc2) 
+ament_target_dependencies(${PROJECT_NAME} smacc2)
 ament_export_include_directories(include)
 ament_export_libraries(${PROJECT_NAME} http_session)
 
