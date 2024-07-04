@@ -21,7 +21,8 @@
 #pragma once
 
 #include <cstring>
-#include <http_client/client_behaviors/cb_http_get_request.hpp>
+#include <http_client/cl_http_client.hpp>
+#include <http_client/client_behaviors/cb_http_post_request.hpp>
 #include <smacc2/smacc.hpp>
 
 namespace sm_atomic_openai
@@ -32,7 +33,7 @@ struct EvHttp : sc::event<EvHttp<TSource, TOrthogonal>>
 {
 };
 
-class CbHttpRequest : public cl_http::CbHttpGetRequest
+class CbHttpRequest : public cl_http::CbHttpPostRequest
 {
 public:
   template <typename TOrthogonal, typename TSourceObject>
@@ -45,15 +46,31 @@ public:
     };
   }
 
-  void onResponseReceived(const cl_http::ClHttp::TResponse & response)
+  virtual void runtimeConfigure() override
   {
-    RCLCPP_INFO_STREAM(this->getLogger(), "ON RESPONSE");
+    // Get OpenAI key from environemt
+    char const * env_key = std::getenv("OPENAI_API_KEY");
+    openai_key_ = env_key == NULL ? std::string() : std::string(env_key);
+    if (openai_key_.empty())
+    {
+      RCLCPP_FATAL_STREAM(this->get_logger(), "An OpenAI key environment variable was not found.");
+    }
+
+    this->requiresClient(cl_http_);
+    cl_http_->onResponseReceived(&CbHttpRequest::onResponseReceived, this);
+  }
+
+  void onResponseReceived(const cl_http::ClHttp::TResponse & response) override
+  {
+    RCLCPP_INFO_STREAM(this->getLogger(), "Responce recieved: ");
     RCLCPP_INFO_STREAM(this->getLogger(), response.body());
     triggerTranstition();
   }
 
 private:
   cl_http::ClHttp * cl_http_;
+
+  std::string openai_key_;
 
   std::function<void()> triggerTranstition;
 };

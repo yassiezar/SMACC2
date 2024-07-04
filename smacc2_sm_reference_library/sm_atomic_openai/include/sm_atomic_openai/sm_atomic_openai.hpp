@@ -16,6 +16,7 @@
 
 // CLIENTS
 #include <ros_timer_client/cl_ros_timer.hpp>
+#include <http_client/cl_http_client.hpp>
 
 // CLIENT BEHAVIORS
 #include <ros_timer_client/client_behaviors/cb_timer_countdown_loop.hpp>
