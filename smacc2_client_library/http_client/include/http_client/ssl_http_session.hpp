@@ -65,6 +65,7 @@ private:
   void on_write(boost::beast::error_code ec, std::size_t bytes_transferred) override;
   void on_read(boost::beast::error_code ec, std::size_t bytes_transferred) override;
   void on_shutdown(boost::beast::error_code ec) override;
+  void setBody(const std::string& body) override;
 
   std::function<void(const TResponse &)> onResponse;
 
@@ -72,7 +73,7 @@ private:
   // boost::beast::tcp_stream stream_;
   boost::beast::ssl_stream<boost::beast::tcp_stream> stream_;
   boost::beast::flat_buffer buffer_;  // (Must persist between reads)
-  boost::beast::http::request<boost::beast::http::empty_body> req_;
-  boost::beast::http::response<boost::beast::http::string_body> res_;
+  boost::beast::http::request<boost::beast::http::string_body> req_;
+  TResponse res_;
 };
 }  // namespace cl_http

@@ -44,6 +44,7 @@ public:
     const boost::beast::http::verb http_method, const int & version) = 0;
 
   virtual std::string getPort() = 0;
+  virtual void setBody(const std::string& body) = 0;
 
 protected:
   virtual void on_resolve(
