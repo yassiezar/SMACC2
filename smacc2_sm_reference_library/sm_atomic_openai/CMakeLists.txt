@@ -19,6 +19,7 @@ find_package(ros_timer_client REQUIRED)
 find_package(http_client REQUIRED)
 find_package(Boost COMPONENTS thread REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(OpenCV REQUIRED)
 
 include_directories(include
                     ${smacc2_INCLUDE_DIRS}
@@ -34,6 +35,7 @@ target_link_libraries(${PROJECT_NAME}_node
   ${ros_timer_client_LIBRARIES}
   ${http_client_LIBRARIES}
   ${Boost_LIBRARIES}
+  ${OpenCV_LIBRARIES}
   OpenSSL::SSL
   OpenSSL::Crypto
 )
