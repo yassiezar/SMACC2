@@ -23,7 +23,7 @@ class OrHttp : public smacc2::Orthogonal<OrHttp> {
   void onInitialize() override {
     auto http_client =
         this->createClient<cl_http::ClHttp>(
-            "https://api.openai.com/v1/chat/completions");
+            "https://api.openai.com");
   }
 };
 }  // namespace sm_atomic_openai

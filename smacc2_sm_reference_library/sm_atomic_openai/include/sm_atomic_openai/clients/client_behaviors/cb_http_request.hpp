@@ -56,7 +56,7 @@ public:
   void runtimeConfigure() override
   {
     // Get OpenAI key from environemt
-    char const * env_key = std::getenv("OPENAI_API_KEY");
+    const auto env_key = std::getenv("OPENAI_API_KEY");
     openai_key_ = env_key == NULL ? std::string() : std::string(env_key);
 
     this->requiresClient(cl_http_);
@@ -74,7 +74,7 @@ public:
     }
 
     // Gather image data
-    auto image = cv::imread("/home/jaycee/Downloads/wood_table.jpg");
+    auto image = cv::imread("~/Downloads/wood_table.jpg");
     std::vector<uchar> img_buf;
     cv::imencode(".jpg", image, img_buf);
     const auto *encoded_img_b64 = reinterpret_cast<unsigned char *>(img_buf.data());
@@ -82,20 +82,27 @@ public:
 
     // Construct HTTP request
     nlohmann::json req_body_json;
-    req_body_json["model"] = "gpt-4o";
+    req_body_json["model"] = "gpt-4o-mini";
+    req_body_json["max_tokens"] = 300;
     req_body_json["messages"][0]["role"] = "user";
     req_body_json["messages"][0]["content"][0]["type"] = "text";
     req_body_json["messages"][0]["content"][0]["text"] = "Is this a door, yes or no";
     req_body_json["messages"][0]["content"][1]["type"] = "image_url";
-    req_body_json["messages"][0]["content"][1]["image_url"]["url"] = ("data:image/jpg;base64," + encoded_img);
+    req_body_json["messages"][0]["content"][1]["image_url"]["url"] = "data:image/jpeg;base64," + encoded_img;
 
     const std::string req_body = req_body_json.dump();
-    cl_http_->makeRequest(cl_http::ClHttp::kHttpRequestMethod::POST, "/", req_body);
+
+    std::unordered_map<std::string, std::string> headers;
+    headers["Authorization"] = "Bearer " + openai_key_;
+    headers["Content-Type"] = "application/json";
+    headers["Content-Length"] = std::to_string(req_body.length());
+
+    cl_http_->makeRequest(cl_http::ClHttp::kHttpRequestMethod::POST, "/v1/chat/completions", req_body, headers);
   }
 
   void onResponseReceived(const cl_http::ClHttp::TResponse & response) override
   {
-    RCLCPP_INFO_STREAM(this->getNode()->get_logger(), "Responce recieved: ");
+    RCLCPP_INFO_STREAM(this->getNode()->get_logger(), "Response recieved: ");
     RCLCPP_INFO_STREAM(this->getNode()->get_logger(), response.body());
     triggerTranstition();
   }
