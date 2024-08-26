@@ -74,7 +74,17 @@ public:
     }
 
     // Gather image data
-    auto image = cv::imread("~/Downloads/wood_table.jpg");
+    const auto img_path_cstr = std::getenv("OPENAI_IMG_PATH");
+    const auto img_path = img_path_cstr == NULL ? std::string() : std::string(img_path_cstr);
+    if (img_path.empty())
+    {
+      RCLCPP_FATAL_STREAM(
+        this->getNode()->get_logger(), "Set the OPENAI_IMG_PATH environment variable to where your test image resides");
+      triggerTranstition();
+      return;
+    }
+    
+    auto image = cv::imread(img_path);
     std::vector<uchar> img_buf;
     cv::imencode(".jpg", image, img_buf);
     const auto *encoded_img_b64 = reinterpret_cast<unsigned char *>(img_buf.data());
