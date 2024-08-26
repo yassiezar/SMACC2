@@ -57,6 +57,14 @@ void ssl_http_session::run(
   req_.set(boost::beast::http::field::host, host);
   req_.set(boost::beast::http::field::user_agent, BOOST_BEAST_VERSION_STRING);
 
+  // Set an SNI to deal with CDNs
+  if (!SSL_set_tlsext_host_name(stream_.native_handle(), host.c_str()))
+  {
+    boost::system::error_code ec{
+      static_cast<int>(::ERR_get_error()), boost::asio::error::get_ssl_category()};
+    std::cerr << ec.message() << "\n";
+    return;
+  }
   // Look up the domain name
   resolver_.async_resolve(
     host.c_str(), kPort.c_str(),
