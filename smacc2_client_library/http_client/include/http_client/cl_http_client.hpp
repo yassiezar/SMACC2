@@ -87,7 +87,7 @@ public:
 
   void onInitialize() override;
 
-  void makeRequest(const kHttpRequestMethod http_method, const std::string & path = "/", const std::string& body="");
+  void makeRequest(const kHttpRequestMethod http_method, const std::string & path = "/", const std::string& body="", const std::unordered_map<std::string, std::string>& headers={});
 
 private:
   const int HTTP_VERSION = 11;

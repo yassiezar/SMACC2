@@ -49,7 +49,8 @@ void ClHttp::onInitialize()
 }
 
 void ClHttp::makeRequest(
-  const kHttpRequestMethod http_method, const std::string & path, const std::string & body)
+  const kHttpRequestMethod http_method, const std::string & path, const std::string & body,
+  const std::unordered_map<std::string, std::string> & headers)
 {
   auto path_used = path;
   if (path[0] != '/')
@@ -78,6 +79,7 @@ void ClHttp::makeRequest(
   }
 
   http_session_ptr->setBody(body);
+  http_session_ptr->setHeaders(headers);
   http_session_ptr->run(
     server_.getServerName(), path_used, static_cast<boost::beast::http::verb>(http_method),
     HTTP_VERSION);

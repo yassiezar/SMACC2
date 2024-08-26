@@ -33,6 +33,19 @@ ssl_http_session::ssl_http_session(
 
 void ssl_http_session::setBody(const std::string & body) { req_.body() = body; }
 
+void ssl_http_session::setHeaders(const std::unordered_map<std::string, std::string> & headers)
+{
+  for (const auto & [key, val] : headers)
+  {
+    this->appendToHeader(key, val);
+  }
+}
+
+void ssl_http_session::appendToHeader(const std::string & key, const std::string & val)
+{
+  req_.set(key, val);
+}
+
 void ssl_http_session::run(
   const std::string & host, const std::string & target, const boost::beast::http::verb http_method,
   const int & version)

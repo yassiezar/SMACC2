@@ -30,6 +30,7 @@ Author: Jacobus Lock
 #include <http_client/http_session_base.hpp>
 #include <iostream>
 #include <string>
+#include <unordered_map>
 
 namespace cl_http
 {
@@ -66,6 +67,9 @@ private:
   void on_read(boost::beast::error_code ec, std::size_t bytes_transferred) override;
   void on_shutdown(boost::beast::error_code ec) override;
   void setBody(const std::string& body) override;
+  void setHeaders(
+    const std::unordered_map<std::string, std::string> & headers) override;
+  void appendToHeader(const std::string& key, const std::string& val);
 
   std::function<void(const TResponse &)> onResponse;
 
