@@ -38,10 +38,10 @@ struct EvHttp : sc::event<EvHttp<TSource, TOrthogonal>>
 {
 };
 
-class CbHttpRequest : public cl_http::CbHttpRequestBase
+class CbOpenAIHttpRequest : public cl_http::CbHttpRequestBase
 {
 public:
-  CbHttpRequest() : cl_http::CbHttpRequestBase(cl_http::ClHttp::kHttpRequestMethod::POST) {}
+  CbOpenAIHttpRequest() : cl_http::CbHttpRequestBase(cl_http::ClHttp::kHttpRequestMethod::POST) {}
 
   template <typename TOrthogonal, typename TSourceObject>
   void onOrthogonalAllocation()
@@ -60,7 +60,7 @@ public:
     openai_key_ = env_key == NULL ? std::string() : std::string(env_key);
 
     this->requiresClient(cl_http_);
-    cl_http_->onResponseReceived(&CbHttpRequest::onResponseReceived, this);
+    cl_http_->onResponseReceived(&CbOpenAIHttpRequest::onResponseReceived, this);
   }
 
   void onEntry() override 

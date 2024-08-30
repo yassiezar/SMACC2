@@ -23,11 +23,11 @@ struct State2 : smacc2::SmaccState<State2, SmAtomicOpenAI>
   using SmaccState::SmaccState;
 
   // TRANSITION TABLE
-  typedef mpl::list<Transition<EvHttp<CbHttpRequest, OrHttp>, State1, SUCCESS>>
+  typedef mpl::list<Transition<EvHttp<CbOpenAIHttpRequest, OrHttp>, State1, SUCCESS>>
     reactions;
 
   // STATE FUNCTIONS
-  static void staticConfigure() { configure_orthogonal<OrHttp, CbHttpRequest>(); }
+  static void staticConfigure() { configure_orthogonal<OrHttp, CbOpenAIHttpRequest>(); }
 
   void runtimeConfigure() { RCLCPP_INFO(getLogger(), "Entering State2"); }
 

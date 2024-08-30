@@ -21,7 +21,7 @@
 // CLIENT BEHAVIORS
 #include <ros_timer_client/client_behaviors/cb_timer_countdown_loop.hpp>
 #include <ros_timer_client/client_behaviors/cb_timer_countdown_once.hpp>
-#include "clients/client_behaviors/cb_http_request.hpp"
+#include "clients/client_behaviors/cb_openai_http_request.hpp"
 
 // ORTHOGONALS
 #include "orthogonals/or_timer.hpp"
